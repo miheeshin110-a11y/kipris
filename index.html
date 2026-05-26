@@ -259,180 +259,115 @@ async function downloadDocx() {
   btn.disabled = true;
 
   if (typeof docx === 'undefined') {
-    alert('docx 라이브러리가 아직 로딩 중이에요. 잠시 후 다시 시도해주세요.');
+    alert('docx 라이브러리 로딩 중이에요. 잠시 후 다시 시도해주세요.');
     btn.textContent = 'Word 파일로 다운로드 (.docx)';
     btn.disabled = false;
     return;
   }
 
-  const brandMy  = document.getElementById('brand-my').value  || '정품';
-  const brandInf = document.getElementById('brand-inf').value || '침해 상품';
-  const prodMy   = document.getElementById('product-my').value || '';
-  const prodInf  = document.getElementById('product-inf').value || '';
-  const today    = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
-
-  const {
-    Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-    AlignmentType, BorderStyle, WidthType, ShadingType, VerticalAlign, ImageRun, Header
-  } = docx;
-
-  const bd  = (c='CBD5E1') => ({style:BorderStyle.SINGLE, size:4, color:c});
-  const cBd = (c='CBD5E1') => ({top:bd(c),bottom:bd(c),left:bd(c),right:bd(c)});
-  const sp  = (pts=6) => new Paragraph({spacing:{before:pts*20,after:0},children:[]});
-  const rl  = () => new Paragraph({border:{bottom:{style:BorderStyle.SINGLE,size:8,color:'2563A8',space:1}},spacing:{before:0,after:120},children:[]});
-
-  const secTitle = (txt) => new Paragraph({
-    spacing:{before:280,after:100},
-    border:{left:{style:BorderStyle.SINGLE,size:20,color:'2563A8',space:8}},
-    indent:{left:160},
-    children:[new TextRun({text:txt, size:24, bold:true, color:'1B3A6B', font:'맑은 고딕'})]
-  });
-
-  const lbCell = (txt,w,fill='DBEAFE') => new TableCell({
-    width:{size:w,type:WidthType.DXA}, borders:cBd('CBD5E1'),
-    shading:{fill,type:ShadingType.CLEAR}, verticalAlign:VerticalAlign.CENTER,
-    margins:{top:80,bottom:80,left:160,right:160},
-    children:[new Paragraph({alignment:AlignmentType.CENTER, children:[
-      new TextRun({text:txt,size:20,bold:true,color:'1B3A6B',font:'맑은 고딕'})
-    ]})]
-  });
-  const vlCell = (txt,w,fill='FFFFFF',color='1A1A1A',bold=false) => new TableCell({
-    width:{size:w,type:WidthType.DXA}, borders:cBd('CBD5E1'),
-    shading:{fill,type:ShadingType.CLEAR}, verticalAlign:VerticalAlign.CENTER,
-    margins:{top:80,bottom:80,left:160,right:160},
-    children:[new Paragraph({children:[
-      new TextRun({text:txt,size:19,color,bold,font:'맑은 고딕'})
-    ]})]
-  });
-
-  async function urlToBuffer(dataUrl) {
-    const res = await fetch(dataUrl);
-    return await res.arrayBuffer();
-  }
-
-  const myBuf  = await urlToBuffer(myB64);
-  const infBuf = await urlToBuffer(infB64);
-
-  const imgCell = (buf, mime, w, h, cellW) => new TableCell({
-    width:{size:cellW,type:WidthType.DXA}, borders:cBd('CBD5E1'),
-    shading:{fill:'FFFFFF',type:ShadingType.CLEAR}, margins:{top:80,bottom:80,left:80,right:80},
-    children:[new Paragraph({alignment:AlignmentType.CENTER, children:[
-      new ImageRun({data:buf, type: mime.includes('png') ? 'png' : 'jpg', transformation:{width:w,height:h}})
-    ]})]
-  });
-  const srcCell = (txt, w) => new TableCell({
-    width:{size:w,type:WidthType.DXA}, borders:cBd('CBD5E1'),
-    shading:{fill:'F8F9FA',type:ShadingType.CLEAR}, margins:{top:60,bottom:60,left:160,right:160},
-    children:[new Paragraph({children:[
-      new TextRun({text:'출처: ',size:18,bold:true,color:'6B7280',font:'맑은 고딕'}),
-      new TextRun({text:txt,size:18,color:'1A1A1A',font:'맑은 고딕'})
-    ]})]
-  });
-
-  const cmpRow = (item,my,inf,hl) => new TableRow({children:[
-    new TableCell({width:{size:2200,type:WidthType.DXA},borders:cBd('CBD5E1'),shading:{fill:hl?'DBEAFE':'F8F9FA',type:ShadingType.CLEAR},margins:{top:80,bottom:80,left:160,right:160},
-      children:[new Paragraph({children:[new TextRun({text:item,size:19,bold:true,color:'1B3A6B',font:'맑은 고딕'})]})]}),
-    new TableCell({width:{size:3413,type:WidthType.DXA},borders:cBd('CBD5E1'),shading:{fill:'FFFFFF',type:ShadingType.CLEAR},margins:{top:80,bottom:80,left:160,right:160},
-      children:[new Paragraph({children:[new TextRun({text:my,size:19,color:'1A1A1A',font:'맑은 고딕'})]})]}),
-    new TableCell({width:{size:3413,type:WidthType.DXA},borders:cBd('CBD5E1'),shading:{fill:hl?'FEF2F2':'FFFFFF',type:ShadingType.CLEAR},margins:{top:80,bottom:80,left:160,right:160},
-      children:[new Paragraph({children:[new TextRun({text: inf + (hl?' ← 유사':''),size:19,bold:hl,color:hl?'DC2626':'1A1A1A',font:'맑은 고딕'})]})]}),
-  ]});
-
-  const opinionRows = analysisResult.opinions.map(o =>
-    new TableRow({children:[
-      new TableCell({width:{size:2200,type:WidthType.DXA},borders:cBd('CBD5E1'),shading:{fill:o.danger?'FEF2F2':'F8F9FA',type:ShadingType.CLEAR},margins:{top:80,bottom:80,left:160,right:160},
-        children:[new Paragraph({children:[new TextRun({text:o.label,size:19,bold:true,color:o.danger?'DC2626':'1B3A6B',font:'맑은 고딕'})]})]}),
-      new TableCell({width:{size:6826,type:WidthType.DXA},borders:cBd('CBD5E1'),shading:{fill:'FFFFFF',type:ShadingType.CLEAR},margins:{top:80,bottom:80,left:160,right:160},
-        children:[new Paragraph({children:[new TextRun({text:o.text,size:19,bold:o.danger,color:o.danger?'DC2626':'1A1A1A',font:'맑은 고딕'})]})]}),
-    ]})
-  );
-
-  const doc2 = new Document({
-    styles:{default:{document:{run:{font:'맑은 고딕',size:21,color:'1A1A1A'}}}},
-    sections:[{
-      headers:{default: new Header({children:[
-        new Paragraph({alignment:AlignmentType.RIGHT,
-          border:{bottom:{style:BorderStyle.SINGLE,size:4,color:'2563A8',space:4}},
-          children:[new TextRun({text:`디자인 유사성 비교 자료  |  ${brandMy} vs ${brandInf}  |  ${today}`,size:18,color:'6B7280',font:'맑은 고딕'})]
-        })
-      ]})},
-      properties:{page:{size:{width:11906,height:16838},margin:{top:1134,right:1134,bottom:1134,left:1134}}},
-      children:[
-        sp(4),
-        new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:0,after:30},
-          children:[new TextRun({text:'디자인 유사성 비교 자료',size:48,bold:true,color:'1B3A6B',font:'맑은 고딕'})]}),
-        new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:0,after:20},
-          children:[new TextRun({text:`${brandMy} ${prodMy}  vs  ${brandInf} ${prodInf}`,size:20,bold:true,color:'EA580C',font:'맑은 고딕'})]}),
-        new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:0,after:20},
-          children:[new TextRun({text:`작성일: ${today}`,size:18,color:'6B7280',font:'맑은 고딕'})]}),
-        rl(), sp(4),
-
-        secTitle('1. 상품 이미지 비교'), sp(2),
-        new Table({width:{size:9026,type:WidthType.DXA},columnWidths:[4513,4513],rows:[
-          new TableRow({children:[
-            new TableCell({width:{size:4513,type:WidthType.DXA},borders:cBd('2563A8'),shading:{fill:'DBEAFE',type:ShadingType.CLEAR},margins:{top:100,bottom:100,left:160,right:160},
-              children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:`정품 도면 — ${brandMy}`,size:22,bold:true,color:'1B3A6B',font:'맑은 고딕'})]})] }),
-            new TableCell({width:{size:4513,type:WidthType.DXA},borders:cBd('2563A8'),shading:{fill:'FEF2F2',type:ShadingType.CLEAR},margins:{top:100,bottom:100,left:160,right:160},
-              children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:`침해 상품 — ${brandInf}`,size:22,bold:true,color:'DC2626',font:'맑은 고딕'})]})] }),
-          ]}),
-          new TableRow({children:[
-            imgCell(myBuf,  myMime,  290, 163, 4513),
-            imgCell(infBuf, infMime, 290, 217, 4513),
-          ]}),
-          new TableRow({children:[
-            srcCell(`${brandMy} 등록 디자인 도면`, 4513),
-            srcCell(`${brandInf} 온라인 판매 페이지`, 4513),
-          ]}),
-        ]}),
-        sp(8),
-
-        secTitle('2. 디자인 비교 (유사성 입증)'), sp(2),
-        new Table({width:{size:9026,type:WidthType.DXA},columnWidths:[2200,3413,3413],rows:[
-          new TableRow({children:[
-            lbCell('비교 항목',2200),
-            lbCell(`${brandMy} (정품)`,3413),
-            new TableCell({width:{size:3413,type:WidthType.DXA},borders:cBd('CBD5E1'),shading:{fill:'FEF2F2',type:ShadingType.CLEAR},margins:{top:100,bottom:100,left:160,right:160},
-              children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:`${brandInf} (침해)`,size:20,bold:true,color:'DC2626',font:'맑은 고딕'})]})]}),
-          ]}),
-          ...analysisResult.rows.map(r => cmpRow(r.item, r.my, r.inf, r.similar)),
-        ]}),
-        sp(8),
-
-        secTitle('3. 종합 의견'), sp(2),
-        new Table({width:{size:9026,type:WidthType.DXA},columnWidths:[2200,6826],rows:[
-          new TableRow({children:[
-            lbCell('구분',2200),
-            lbCell('내용',6826),
-          ]}),
-          ...opinionRows,
-        ]}),
-        sp(10),
-
-        new Paragraph({alignment:AlignmentType.RIGHT,
-          children:[new TextRun({text:`${today}    작성자: ${brandMy} 법무팀  (서명/인)`,size:19,color:'6B7280',font:'맑은 고딕'})]}),
-        sp(4), rl(),
-      ]
-    }]
-  });
-
-  let buf;
   try {
-    buf = await Packer.toBuffer(doc2);
+    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+            AlignmentType, BorderStyle, WidthType, ShadingType, VerticalAlign, Header } = docx;
+
+    const brandMy  = document.getElementById('brand-my').value  || '정품';
+    const brandInf = document.getElementById('brand-inf').value || '침해 상품';
+    const prodMy   = document.getElementById('product-my').value || '';
+    const prodInf  = document.getElementById('product-inf').value || '';
+    const today    = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
+
+    const bd  = (c='CBD5E1') => ({style:BorderStyle.SINGLE, size:4, color:c});
+    const cBd = (c='CBD5E1') => ({top:bd(c),bottom:bd(c),left:bd(c),right:bd(c)});
+    const sp  = (pts=6) => new Paragraph({spacing:{before:pts*20,after:0},children:[]});
+
+    const cell = (txt, w, fill='FFFFFF', color='1A1A1A', bold=false) => new TableCell({
+      width:{size:w,type:WidthType.DXA}, borders:cBd(),
+      shading:{fill,type:ShadingType.CLEAR},
+      margins:{top:80,bottom:80,left:160,right:160},
+      children:[new Paragraph({children:[new TextRun({text:txt,size:20,color,bold,font:'맑은 고딕'})]})]
+    });
+
+    const rows = analysisResult.rows.map(r => new TableRow({children:[
+      cell(r.item,   2200,'F0F4FF','1B3A6B',true),
+      cell(r.my,     3413,'FFFFFF','1A1A1A',false),
+      cell(r.inf+(r.similar?' ← 유사':''), 3413, r.similar?'FEF2F2':'FFFFFF', r.similar?'DC2626':'1A1A1A', r.similar),
+    ]}));
+
+    const opRows = analysisResult.opinions.map(o => new TableRow({children:[
+      cell(o.label, 2200, o.danger?'FEF2F2':'F0F4FF', o.danger?'DC2626':'1B3A6B', true),
+      cell(o.text,  6826, 'FFFFFF', o.danger?'DC2626':'1A1A1A', o.danger),
+    ]}));
+
+    const doc2 = new Document({
+      sections:[{
+        properties:{page:{size:{width:11906,height:16838},margin:{top:1134,right:1134,bottom:1134,left:1134}}},
+        children:[
+          sp(4),
+          new Paragraph({alignment:AlignmentType.CENTER, spacing:{before:0,after:40},
+            children:[new TextRun({text:'디자인 유사성 비교 자료',size:48,bold:true,color:'1B3A6B',font:'맑은 고딕'})]}),
+          new Paragraph({alignment:AlignmentType.CENTER, spacing:{before:0,after:20},
+            children:[new TextRun({text:`${brandMy} ${prodMy}  vs  ${brandInf} ${prodInf}`,size:22,bold:true,color:'EA580C',font:'맑은 고딕'})]}),
+          new Paragraph({alignment:AlignmentType.CENTER, spacing:{before:0,after:20},
+            children:[new TextRun({text:`작성일: ${today}`,size:18,color:'6B7280',font:'맑은 고딕'})]}),
+          sp(6),
+
+          new Paragraph({spacing:{before:200,after:80}, indent:{left:160},
+            border:{left:{style:BorderStyle.SINGLE,size:20,color:'2563A8',space:8}},
+            children:[new TextRun({text:'1. 디자인 비교표',size:24,bold:true,color:'1B3A6B',font:'맑은 고딕'})]}),
+          sp(2),
+          new Table({
+            width:{size:9026,type:WidthType.DXA},
+            columnWidths:[2200,3413,3413],
+            rows:[
+              new TableRow({children:[
+                cell('비교 항목',2200,'DBEAFE','1B3A6B',true),
+                cell(`${brandMy} (정품)`,3413,'DBEAFE','1B3A6B',true),
+                cell(`${brandInf} (침해)`,3413,'FEF2F2','DC2626',true),
+              ]}),
+              ...rows,
+            ]
+          }),
+          sp(8),
+
+          new Paragraph({spacing:{before:200,after:80}, indent:{left:160},
+            border:{left:{style:BorderStyle.SINGLE,size:20,color:'2563A8',space:8}},
+            children:[new TextRun({text:'2. 종합 의견',size:24,bold:true,color:'1B3A6B',font:'맑은 고딕'})]}),
+          sp(2),
+          new Table({
+            width:{size:9026,type:WidthType.DXA},
+            columnWidths:[2200,6826],
+            rows:[
+              new TableRow({children:[
+                cell('구분',2200,'DBEAFE','1B3A6B',true),
+                cell('내용',6826,'DBEAFE','1B3A6B',true),
+              ]}),
+              ...opRows,
+            ]
+          }),
+          sp(10),
+
+          new Paragraph({alignment:AlignmentType.RIGHT,
+            children:[new TextRun({text:`${today}    작성자: ${brandMy} 법무팀  (서명/인)`,size:18,color:'6B7280',font:'맑은 고딕'})]}),
+        ]
+      }]
+    });
+
+    const buf  = await Packer.toBuffer(doc2);
+    const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = `디자인비교_${brandMy}vs${brandInf}_${new Date().toISOString().slice(0,10)}.docx`;
+    a.click();
+
   } catch(e) {
-    alert('Word 파일 생성 오류: ' + e.message);
-    btn.textContent = 'Word 파일로 다운로드 (.docx)';
-    btn.disabled = false;
-    return;
+    console.error(e);
+    alert('오류: ' + e.message);
   }
-  const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `디자인비교_${brandMy}vs${brandInf}_${new Date().toISOString().slice(0,10)}.docx`;
-  a.click();
 
   btn.textContent = 'Word 파일로 다운로드 (.docx)';
   btn.disabled = false;
 }
+
+</script>
 </script>
 </body>
 </html>
