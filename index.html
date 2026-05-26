@@ -65,6 +65,15 @@
   <h1>디자인 유사성 자동 분석</h1>
   <p class="subtitle">두 이미지를 업로드하면 AI가 비교표를 자동으로 채우고 Word 파일로 다운로드할 수 있어요.</p>
 
+  <div class="field" style="margin-bottom:1.5rem;">
+    <label>Anthropic API 키 <span style="color:#DC2626">*</span></label>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input id="api-key" type="password" placeholder="sk-ant-api03-..." style="flex:1;">
+      <button onclick="toggleKey()" id="btn-toggle" style="height:36px;padding:0 12px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;cursor:pointer;font-size:12px;white-space:nowrap;">보기</button>
+    </div>
+    <span style="font-size:11px;color:#9CA3AF;margin-top:2px;">키는 브라우저에만 저장되며 외부로 전송되지 않아요. <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:#2563A8;">API 키 발급 →</a></span>
+  </div>
+
   <div class="upload-grid">
     <div class="upload-card" id="box-my" onclick="document.getElementById('file-my').click()">
       <input type="file" id="file-my" accept="image/*">
@@ -138,9 +147,17 @@ function setupUpload(fileId, boxId, mimeRef, b64Ref) {
 
 setupUpload('file-my',  'box-my');
 setupUpload('file-inf', 'box-inf');
+document.getElementById('api-key').addEventListener('input', checkReady);
 
 function checkReady() {
-  document.getElementById('btn-analyze').disabled = !(myB64 && infB64);
+  const key = document.getElementById('api-key').value.trim();
+  document.getElementById('btn-analyze').disabled = !(myB64 && infB64 && key);
+}
+function toggleKey() {
+  const inp = document.getElementById('api-key');
+  const btn = document.getElementById('btn-toggle');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '숨기기'; }
+  else { inp.type = 'password'; btn.textContent = '보기'; }
 }
 
 async function analyze() {
@@ -178,9 +195,11 @@ async function analyze() {
 }`;
 
   try {
+    const apiKey = document.getElementById('api-key').value.trim();
+    if (!apiKey) { alert('API 키를 입력해주세요.'); btn.innerHTML = 'AI로 유사성 분석하기'; btn.disabled = false; return; }
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1500,
