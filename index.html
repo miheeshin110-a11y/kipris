@@ -351,12 +351,13 @@ async function downloadDocx() {
       }]
     });
 
-    const buf  = await Packer.toBuffer(doc2);
-    const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    const blob = await Packer.toBlob(doc2);
     const a    = document.createElement('a');
     a.href     = URL.createObjectURL(blob);
     a.download = `디자인비교_${brandMy}vs${brandInf}_${new Date().toISOString().slice(0,10)}.docx`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
 
   } catch(e) {
     console.error(e);
