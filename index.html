@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>디자인 유사성 자동 분석 — 데이즈온</title>
-<script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, 'Malgun Gothic', sans-serif; background: #f5f5f5; color: #1a1a1a; min-height: 100vh; }
@@ -255,8 +255,15 @@ function render() {
 async function downloadDocx() {
   if (!analysisResult) return;
   const btn = document.getElementById('btn-dl');
-  btn.textContent = '생성 중...';
+  btn.textContent = 'Word 파일 생성 중...';
   btn.disabled = true;
+
+  if (typeof docx === 'undefined') {
+    alert('docx 라이브러리가 아직 로딩 중이에요. 잠시 후 다시 시도해주세요.');
+    btn.textContent = 'Word 파일로 다운로드 (.docx)';
+    btn.disabled = false;
+    return;
+  }
 
   const brandMy  = document.getElementById('brand-my').value  || '정품';
   const brandInf = document.getElementById('brand-inf').value || '침해 상품';
@@ -408,7 +415,15 @@ async function downloadDocx() {
     }]
   });
 
-  const buf = await Packer.toBuffer(doc2);
+  let buf;
+  try {
+    buf = await Packer.toBuffer(doc2);
+  } catch(e) {
+    alert('Word 파일 생성 오류: ' + e.message);
+    btn.textContent = 'Word 파일로 다운로드 (.docx)';
+    btn.disabled = false;
+    return;
+  }
   const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
